@@ -1,4 +1,5 @@
-mod extend_module;
+mod dispatch;
+mod prefix;
 use proc_macro::TokenStream;
 use syn::parse_macro_input;
 
@@ -27,11 +28,17 @@ use syn::parse_macro_input;
 ///  * `state` - attribute for state members
 ///  * `module` - attribute for module members
 #[proc_macro_derive(ModuleInfo, attributes(state, module))]
-pub fn module(input: TokenStream) -> TokenStream {
+pub fn module_info(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input);
 
-    match extend_module::module(input) {
+    match prefix::derive_module_info(input) {
         Ok(ok) => ok,
         Err(err) => err.to_compile_error().into(),
     }
+}
+
+#[proc_macro_derive(Genesis, attributes(state, module))]
+pub fn genesis(input: TokenStream) -> TokenStream {
+    //dispatch::genesis::derive_genesis(input)
+    todo!()
 }
