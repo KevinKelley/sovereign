@@ -83,15 +83,16 @@ pub mod second_test_module {
     }
 }
 
+// Debugging hint: To expand the macro in tests run: `cargo expand --test tests`
 #[derive(Genesis)]
 struct Runtime<C: Context> {
     _first: first_test_module::FirstTestStruct<C>,
     _second: second_test_module::SecondTestStruct<C>,
 }
 
-use sov_modules_api::Genesis;
-
 fn main() {
+    use sov_modules_api::Genesis;
+
     type C = MockContext;
     let storage = Runtime::<C>::genesis().unwrap();
 

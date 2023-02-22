@@ -1,6 +1,4 @@
-mod dispatch;
-
-//#[test]
+#[test]
 fn module_info_tests() {
     let t = trybuild::TestCases::new();
     t.pass("tests/module_info/parse.rs");

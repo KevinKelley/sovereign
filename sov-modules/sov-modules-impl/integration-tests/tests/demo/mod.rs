@@ -1,3 +1,6 @@
+// TODO remove it after all the macors are implemented.
+#![allow(dead_code)]
+
 use borsh::{BorshDeserialize, BorshSerialize};
 use example_election::Election;
 use example_value_setter::ValueSetter;
@@ -13,9 +16,9 @@ use std::{io::Cursor, marker::PhantomData};
 /// dispatch_tx is a high level interface used by the sdk.
 /// Transaction signature must be checked outside of this function.
 fn dispatch_tx<C: Context, VR: ValueReader>(
-    tx_data: Vec<u8>,
-    context: C,
-    value_reader: VR,
+    _tx_data: Vec<u8>,
+    _context: C,
+    _value_reader: VR,
 ) -> Result<(CallResponse, CacheLog), Error> {
     // 1. Create Storage (with fresh Cache)
     // 2. Deserialize tx
