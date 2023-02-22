@@ -1,5 +1,6 @@
 mod dispatch;
 mod prefix;
+use dispatch::{genesis::GenesisMacro, MacroHelper};
 use proc_macro::TokenStream;
 use syn::parse_macro_input;
 
@@ -40,7 +41,9 @@ pub fn module_info(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(Genesis, attributes(state, module))]
 pub fn genesis(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input);
-    match dispatch::genesis::derive_genesis(input) {
+    let genesis_macro = GenesisMacro::new("Genesis");
+
+    match genesis_macro.derive_genesis(input) {
         Ok(ok) => ok,
         Err(err) => err.to_compile_error().into(),
     }

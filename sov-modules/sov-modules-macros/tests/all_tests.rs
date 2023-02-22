@@ -1,3 +1,5 @@
+mod dispatch;
+
 //#[test]
 fn module_info_tests() {
     let t = trybuild::TestCases::new();

@@ -1,7 +1,6 @@
-use sov_modules_api::mocks::MockContext;
-use sov_modules_api::{CallResponse, Context, Error, Module, ModuleInfo};
+use sov_modules_api::{mocks::MockContext, CallResponse, Context, Error, Module, ModuleInfo};
 use sov_modules_macros::{Genesis, ModuleInfo};
-use sov_state::{JmtStorage, StateMap};
+use sov_state::StateValue;
 
 pub mod first_test_module {
     use super::*;
@@ -9,7 +8,7 @@ pub mod first_test_module {
     #[derive(ModuleInfo)]
     pub(crate) struct FirstTestStruct<C: Context> {
         #[state]
-        pub state_in_first_struct: StateMap<C::PublicKey, u32, C::Storage>,
+        pub state_in_first_struct: StateValue<u32, C::Storage>,
     }
 
     impl<C: Context> Module for FirstTestStruct<C> {
@@ -18,20 +17,26 @@ pub mod first_test_module {
         type QueryMessage = ();
 
         fn genesis(&mut self) -> Result<(), Error> {
+            self.state_in_first_struct.set(1);
             Ok(())
         }
 
         fn call(
             &mut self,
-            msg: Self::CallMessage,
-            context: &Self::Context,
+            _msg: Self::CallMessage,
+            _context: &Self::Context,
         ) -> Result<CallResponse, Error> {
             todo!()
         }
 
-        #[cfg(feature = "native")]
-        fn query(&self, msg: Self::QueryMessage) -> sov_modules_api::QueryResponse {
+        fn query(&self, _msg: Self::QueryMessage) -> sov_modules_api::QueryResponse {
             todo!()
+        }
+    }
+
+    impl<C: Context> FirstTestStruct<C> {
+        pub(crate) fn get_state_value(&self) -> Option<u32> {
+            self.state_in_first_struct.get()
         }
     }
 }
@@ -45,7 +50,7 @@ pub mod second_test_module {
     #[derive(ModuleInfo)]
     pub(crate) struct SecondTestStruct<C: Context> {
         #[state]
-        pub state_in_second_struct: StateMap<C::PublicKey, u32, C::Storage>,
+        pub state_in_second_struct: StateValue<u32, C::Storage>,
     }
 
     impl<C: Context> Module for SecondTestStruct<C> {
@@ -54,30 +59,47 @@ pub mod second_test_module {
         type QueryMessage = TestType;
 
         fn genesis(&mut self) -> Result<(), Error> {
+            self.state_in_second_struct.set(2);
             Ok(())
         }
 
         fn call(
             &mut self,
-            msg: Self::CallMessage,
-            context: &Self::Context,
+            _msg: Self::CallMessage,
+            _context: &Self::Context,
         ) -> Result<CallResponse, Error> {
             todo!()
         }
 
-        #[cfg(feature = "native")]
-        fn query(&self, msg: Self::QueryMessage) -> sov_modules_api::QueryResponse {
+        fn query(&self, _msg: Self::QueryMessage) -> sov_modules_api::QueryResponse {
             todo!()
+        }
+    }
+
+    impl<C: Context> SecondTestStruct<C> {
+        pub(crate) fn get_state_value(&self) -> Option<u32> {
+            self.state_in_second_struct.get()
         }
     }
 }
 
 #[derive(Genesis)]
 struct Runtime<C: Context> {
-    first: first_test_module::FirstTestStruct<C>,
-    second: second_test_module::SecondTestStruct<C>,
+    _first: first_test_module::FirstTestStruct<C>,
+    _second: second_test_module::SecondTestStruct<C>,
 }
 
+use sov_modules_api::Genesis;
+
 fn main() {
-    //panic!()
+    type C = MockContext;
+    let storage = Runtime::<C>::genesis().unwrap();
+
+    let first_module = first_test_module::FirstTestStruct::<C>::new(storage.clone());
+    let state_value = first_module.get_state_value();
+    assert_eq!(state_value, Some(1));
+
+    let second_module = second_test_module::SecondTestStruct::<C>::new(storage);
+    let state_value = second_module.get_state_value();
+    assert_eq!(state_value, Some(2));
 }
