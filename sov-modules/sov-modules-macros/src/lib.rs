@@ -39,6 +39,9 @@ pub fn module_info(input: TokenStream) -> TokenStream {
 
 #[proc_macro_derive(Genesis, attributes(state, module))]
 pub fn genesis(input: TokenStream) -> TokenStream {
-    //dispatch::genesis::derive_genesis(input)
-    todo!()
+    let input = parse_macro_input!(input);
+    match dispatch::genesis::derive_genesis(input) {
+        Ok(ok) => ok,
+        Err(err) => err.to_compile_error().into(),
+    }
 }
