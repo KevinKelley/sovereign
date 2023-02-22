@@ -1,6 +1,6 @@
 mod dispatch;
 mod prefix;
-use dispatch::{genesis::GenesisMacro, MacroHelper};
+use dispatch::genesis::GenesisMacro;
 use proc_macro::TokenStream;
 use syn::parse_macro_input;
 
