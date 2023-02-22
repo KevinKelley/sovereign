@@ -38,6 +38,7 @@ pub fn module_info(input: TokenStream) -> TokenStream {
     }
 }
 
+/// Derives the `sov-modules-api::Genesis` implementation for the underlying type.
 #[proc_macro_derive(Genesis, attributes(state, module))]
 pub fn genesis(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input);

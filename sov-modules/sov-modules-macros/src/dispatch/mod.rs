@@ -8,13 +8,13 @@ pub(crate) struct StructNamedField {
     ty: syn::Type,
 }
 
-pub(crate) struct MacroHelper {
-    name: &'static str,
+pub(crate) struct StructFieldExtractor {
+    macro_name: &'static str,
 }
 
-impl MacroHelper {
-    pub(crate) fn new(name: &'static str) -> Self {
-        Self { name }
+impl StructFieldExtractor {
+    pub(crate) fn new(macro_name: &'static str) -> Self {
+        Self { macro_name }
     }
 
     // Extracts named fields form a struct or emits an error.
@@ -26,11 +26,11 @@ impl MacroHelper {
             syn::Data::Struct(data_struct) => self.get_fields_from_data_struct(data_struct),
             syn::Data::Enum(en) => Err(syn::Error::new_spanned(
                 en.enum_token,
-                format!("The {} macro supports structs only.", self.name),
+                format!("The {} macro supports structs only.", self.macro_name),
             )),
             syn::Data::Union(un) => Err(syn::Error::new_spanned(
                 un.union_token,
-                format!("The {} macro supports structs only.", self.name),
+                format!("The {} macro supports structs only.", self.macro_name),
             )),
         }
     }
@@ -49,7 +49,7 @@ impl MacroHelper {
                     &original_field.ident,
                     format!(
                         "The {} macro supports structs only, unnamed fields witnessed.",
-                        self.name
+                        self.macro_name
                     ),
                 ))?;
 

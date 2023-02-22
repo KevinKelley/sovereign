@@ -1,17 +1,17 @@
 use syn::DeriveInput;
 use syn::TypeGenerics;
 
-use super::MacroHelper;
+use super::StructFieldExtractor;
 use super::StructNamedField;
 
 pub(crate) struct GenesisMacro {
-    helper: MacroHelper,
+    helper: StructFieldExtractor,
 }
 
 impl GenesisMacro {
     pub(crate) fn new(name: &'static str) -> Self {
         Self {
-            helper: MacroHelper::new(name),
+            helper: StructFieldExtractor::new(name),
         }
     }
 
@@ -57,8 +57,9 @@ impl GenesisMacro {
                 let ident = &field.ident;
                 let ty = &field.ty;
 
-                // let mut module_name = <ModuleName::<C> as sov_modules_api::ModuleInfo<C>>::new(storage.clone());
-                // module_name.genesis()?;
+                // generates body for `genesis` method:
+                //  let mut module_name = <ModuleName::<C> as sov_modules_api::ModuleInfo<C>>::new(storage.clone());
+                //  module_name.genesis()?;
                  quote::quote! {
                     let mut #ident = <#ty as sov_modules_api::ModuleInfo #type_generics>::new(storage.clone());
                     #ident.genesis()?;
