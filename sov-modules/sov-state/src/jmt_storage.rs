@@ -4,12 +4,15 @@ use crate::{
     Storage,
 };
 use first_read_last_write_cache::cache::{CacheLog, FirstReads};
+use jmt::{storage::TreeReader, KeyHash};
 
 pub type JmtDb = sovereign_db::state_db::StateDB;
 
 impl ValueReader for JmtDb {
     fn read_value(&self, _key: StorageKey) -> Option<StorageValue> {
-        None
+        let key_hash = KeyHash([1u8; 32]);
+        let value = self.get_value_option(0, key_hash).unwrap();
+        value.map(StorageValue::new_from_bytes)
     }
 }
 

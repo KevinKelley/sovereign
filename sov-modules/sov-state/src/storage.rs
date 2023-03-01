@@ -80,6 +80,12 @@ impl StorageValue {
             value: cache_value.value,
         }
     }
+
+    pub fn new_from_bytes(data: Vec<u8>) -> Self {
+        Self {
+            value: Arc::new(data),
+        }
+    }
 }
 
 // An interface for storing and retrieving values in the storage.
