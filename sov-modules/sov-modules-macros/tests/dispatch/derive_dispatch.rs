@@ -3,7 +3,7 @@ mod modules;
 use modules::{first_test_module, second_test_module};
 use sov_modules_api::{
     mocks::{MockContext, MockPublicKey},
-    Context, Genesis, Module,
+    Context, Genesis, MessageCodec, Module,
 };
 use sov_modules_macros::{DispatchCall, DispatchQuery, Genesis, MessageCodec};
 use sovereign_db::state_db::StateDB;

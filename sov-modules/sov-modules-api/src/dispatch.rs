@@ -33,3 +33,12 @@ pub trait DispatchQuery {
         storage: <<Self as DispatchQuery>::Context as Spec>::Storage,
     ) -> QueryResponse;
 }
+
+pub trait MessageCodec {
+    type DispatchCall: DispatchCall;
+    type DispatchQuery: DispatchQuery;
+
+    fn decode_query(data: &[u8]) -> core::result::Result<Self::DispatchQuery, anyhow::Error>;
+
+    fn decode_call(data: &[u8]) -> core::result::Result<Self::DispatchCall, anyhow::Error>;
+}

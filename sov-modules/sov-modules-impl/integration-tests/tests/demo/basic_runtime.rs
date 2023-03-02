@@ -5,7 +5,7 @@
 
 use sov_modules_api::{
     mocks::{MockContext, MockPublicKey},
-    CallResponse, Context, DispatchCall, DispatchQuery, Error, Genesis, Module,
+    CallResponse, Context, DispatchCall, DispatchQuery, Error, Genesis, MessageCodec, Module,
 };
 use sov_modules_macros::{DispatchCall, DispatchQuery, Genesis, MessageCodec};
 use sov_state::{CacheLog, ValueReader};
@@ -61,7 +61,7 @@ fn dispatch_tx<C: Context, VR: ValueReader>(
 /// Similar mechanism works for queries with the difference that queries are submitted by users directly to the rollup node
 /// instead of going through the DA layer.
 #[derive(Genesis, DispatchCall, DispatchQuery, MessageCodec)]
-pub struct Runtime<C: Context> {
+struct Runtime<C: Context> {
     /// Definition of the first module in the rollup (must implement the sov_modules_api::Module trait).
     election: example_election::Election<C>,
     /// Definition of the second module in the rollup (must implement the sov_modules_api::Module trait).

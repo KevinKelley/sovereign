@@ -41,16 +41,22 @@ impl<'a> StructDef<'a> {
         quote::quote! {
             impl #impl_generics #original_ident #ty_generics #where_clause {
                 #(#fns)*
+            }
 
-                pub (crate) fn decode_query(data: &[u8]) -> core::result::Result<impl sov_modules_api::DispatchQuery<Context = C>, anyhow::Error>{
+            impl #impl_generics sov_modules_api::MessageCodec for #original_ident #ty_generics #where_clause {
+                type DispatchCall = #call_enum<C>;
+                type DispatchQuery = #query_enum<C>;
+
+                fn decode_call(data: &[u8]) -> core::result::Result<Self::DispatchCall, anyhow::Error>{
+                    let mut data = std::io::Cursor::new(data);
+                    core::result::Result::Ok(<#call_enum #ty_generics as sovereign_sdk::serial::Decode>::decode(&mut data)?)
+                }
+
+                fn decode_query(data: &[u8]) -> core::result::Result<Self::DispatchQuery, anyhow::Error>{
                     let mut data = std::io::Cursor::new(data);
                     core::result::Result::Ok(<#query_enum #ty_generics as sovereign_sdk::serial::Decode>::decode(&mut data)?)
                 }
 
-                pub (crate) fn decode_call(data: &[u8]) ->  core::result::Result<impl sov_modules_api::DispatchCall<Context = C>, anyhow::Error> {
-                    let mut data = std::io::Cursor::new(data);
-                    core::result::Result::Ok(<#call_enum #ty_generics as sovereign_sdk::serial::Decode>::decode(&mut data)?)
-                }
             }
         }
     }

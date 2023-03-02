@@ -8,7 +8,7 @@ mod error;
 mod prefix;
 mod response;
 
-pub use dispatch::{DispatchCall, DispatchQuery, Genesis};
+pub use dispatch::{DispatchCall, DispatchQuery, Genesis, MessageCodec};
 pub use error::Error;
 pub use prefix::Prefix;
 pub use response::{CallResponse, QueryResponse};
