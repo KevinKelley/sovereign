@@ -13,10 +13,30 @@ use jmt::{
 use sovereign_db::state_db::StateDB;
 use sovereign_sdk::core::crypto;
 
+type VersionAndKeyHash = (Version, KeyHash);
+
 #[derive(Clone)]
 struct StateDBAndVersion {
     db: StateDB,
     version: Version,
+}
+
+impl StateDBAndVersion {
+    fn write_data(&mut self, data: Vec<(VersionAndKeyHash, Option<Vec<u8>>)>) {
+        let mut batch = NodeBatch::default();
+        batch.extend(vec![], data);
+        self.db
+            .write_node_batch(&batch)
+            .unwrap_or_else(|e| panic!("Database error: {e}"));
+
+        self.version += 1;
+    }
+
+    fn put_preimage(&self, key_hash: KeyHash, key: &Vec<u8>) {
+        self.db
+            .put_preimage(key_hash, key)
+            .unwrap_or_else(|e| panic!("Database error: {e}"));
+    }
 }
 
 impl ValueReader for StateDBAndVersion {
@@ -33,7 +53,7 @@ impl ValueReader for StateDBAndVersion {
 pub struct JmtStorage {
     batch_cache: StorageInternalCache,
     tx_cache: StorageInternalCache,
-    db_and_version: StateDBAndVersion,
+    db: StateDBAndVersion,
 }
 
 impl JmtStorage {
@@ -53,7 +73,7 @@ impl JmtStorage {
         Ok(Self {
             batch_cache: StorageInternalCache::default(),
             tx_cache: StorageInternalCache::default(),
-            db_and_version: StateDBAndVersion { db, version },
+            db: StateDBAndVersion { db, version },
         })
     }
 
@@ -65,7 +85,7 @@ impl JmtStorage {
 
 impl Storage for JmtStorage {
     fn get(&self, key: StorageKey) -> Option<StorageValue> {
-        self.tx_cache.get_or_fetch(key, &self.db_and_version)
+        self.tx_cache.get_or_fetch(key, &self.db)
     }
 
     fn set(&mut self, key: StorageKey, value: StorageValue) {
@@ -83,33 +103,25 @@ impl Storage for JmtStorage {
     }
 
     fn finalize(&mut self) {
-        let mut batch = NodeBatch::default();
         let cache = &mut self.batch_cache.borrow_mut();
 
         let mut data = Vec::with_capacity(cache.len());
 
-        let mut save_in_db = false;
         for (cache_key, cache_value) in cache.get_all_writes_and_clear_cache() {
-            save_in_db = true;
             let key = &cache_key.key;
             // TODO: Don't hardcode the hashing algorithm
             // https://github.com/Sovereign-Labs/sovereign/issues/113
             let key_hash = KeyHash(crypto::hash::sha2(key.as_ref()).0);
 
-            self.db_and_version
-                .db
-                .put_preimage(key_hash, key)
-                .unwrap_or_else(|e| panic!("Database error: {e}"));
+            self.db.put_preimage(key_hash, key);
 
             let value = cache_value.map(|v| Arc::try_unwrap(v.value).unwrap());
-            data.push(((self.db_and_version.version, key_hash), value));
+            data.push(((self.db.version, key_hash), value));
         }
 
         // TODO: Question, should we bump version even if nothing was saved in the db?
-        if save_in_db {
-            self.db_and_version.version += 1;
-            batch.extend(vec![], data);
-            self.db_and_version.db.write_node_batch(&batch).unwrap();
+        if !data.is_empty() {
+            self.db.write_data(data);
         }
     }
 }
@@ -117,7 +129,7 @@ impl Storage for JmtStorage {
 pub fn delete_storage(path: impl AsRef<Path>) {
     fs::remove_dir_all(&path)
         .or_else(|_| fs::remove_file(&path))
-        .unwrap_or(());
+        .unwrap();
 }
 
 #[cfg(test)]
@@ -137,7 +149,7 @@ mod test {
             storage.merge();
             storage.finalize();
 
-            assert_eq!(storage.db_and_version.version, 1);
+            assert_eq!(storage.db.version, 1);
         }
 
         {
@@ -148,20 +160,20 @@ mod test {
 
             assert_eq!(value_1, storage.get(key_1).unwrap());
 
-            assert_eq!(storage.db_and_version.version, 1);
+            assert_eq!(storage.db.version, 1);
 
             let key = StorageKey::from("key_2");
             let value = StorageValue::from("value_2");
-            assert_eq!(storage.db_and_version.version, 1);
+            assert_eq!(storage.db.version, 1);
             storage.set(key, value);
             storage.merge();
             storage.finalize();
-            assert_eq!(storage.db_and_version.version, 2);
+            assert_eq!(storage.db.version, 2);
         }
 
         {
             let mut storage = JmtStorage::with_path(&path).unwrap();
-            assert_eq!(storage.db_and_version.version, 2);
+            assert_eq!(storage.db.version, 2);
 
             let key = StorageKey::from("key_2");
             let value = StorageValue::from("value_2");
@@ -169,7 +181,7 @@ mod test {
             storage.set(key, value);
             storage.merge();
             storage.finalize();
-            assert_eq!(storage.db_and_version.version, 3);
+            assert_eq!(storage.db.version, 3);
         }
     }
 }
