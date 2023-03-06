@@ -67,10 +67,11 @@ impl StateDB {
     }
 
     pub fn last_version(&self) -> anyhow::Result<Option<Version>> {
-        let rev_iter = &mut self.db.rev_iter::<JmtNodes>()?;
+        let mut iter = self.db.iter::<JmtValues>()?;
+        iter.seek_to_last();
 
-        let version = match rev_iter.next() {
-            Some(Ok((key, _))) => Some(key.version()),
+        let version = match iter.next() {
+            Some(Ok(((_, version), _))) => Some(version),
             _ => None,
         };
         Ok(version)
