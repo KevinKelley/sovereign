@@ -65,6 +65,16 @@ impl StateDB {
             None => Ok(None),
         }
     }
+
+    pub fn last_version(&self) -> anyhow::Result<Option<Version>> {
+        let rev_iter = &mut self.db.rev_iter::<JmtNodes>()?;
+
+        let version = match rev_iter.next() {
+            Some(Ok((key, _))) => Some(key.version()),
+            _ => None,
+        };
+        Ok(version)
+    }
 }
 
 impl TreeReader for StateDB {

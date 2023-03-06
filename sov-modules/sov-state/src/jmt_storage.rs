@@ -8,7 +8,7 @@ use crate::{
 use first_read_last_write_cache::cache::FirstReads;
 use jmt::{
     storage::{NodeBatch, TreeWriter},
-    KeyHash,
+    KeyHash, Version,
 };
 use sovereign_db::state_db::StateDB;
 use sovereign_sdk::core::crypto;
@@ -28,24 +28,28 @@ pub struct JmtStorage {
     batch_cache: StorageInternalCache,
     tx_cache: StorageInternalCache,
     db: StateDB,
+    version: Version,
 }
 
 impl JmtStorage {
     #[cfg(any(test, feature = "temp"))]
     pub fn temporary() -> Self {
-        Self {
-            batch_cache: StorageInternalCache::default(),
-            tx_cache: StorageInternalCache::default(),
-            db: StateDB::temporary(),
-        }
+        let db = StateDB::temporary();
+        Self::with_db(db).unwrap()
     }
 
     pub fn with_path(path: impl AsRef<Path>) -> Result<Self, anyhow::Error> {
         let db = StateDB::with_path(&path)?;
+        Self::with_db(db)
+    }
+
+    fn with_db(db: StateDB) -> Result<Self, anyhow::Error> {
+        let version = db.last_version()?.unwrap_or_default();
         Ok(Self {
             batch_cache: StorageInternalCache::default(),
             tx_cache: StorageInternalCache::default(),
             db,
+            version,
         })
     }
 
@@ -91,13 +95,12 @@ impl Storage for JmtStorage {
                 .unwrap_or_else(|e| panic!("Database error: {e}"));
 
             let value = cache_value.map(|v| Arc::try_unwrap(v.value).unwrap());
-            // TODO: Bump and save `version` number
-            // https://github.com/Sovereign-Labs/sovereign/issues/114
-            data.push(((0, key_hash), value));
+            data.push(((self.version, key_hash), value));
         }
 
         batch.extend(vec![], data);
         self.db.write_node_batch(&batch).unwrap();
+        self.version += 1
     }
 }
 
